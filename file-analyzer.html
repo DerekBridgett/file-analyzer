@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel File Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Excel File Analyzer</h1>
+            <p class="text-gray-600">Upload your Excel or CSV file to analyze it</p>
+        </div>
+
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-8">
+            <div class="mb-4">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+            </div>
+            <label class="cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors inline-block">
+                Choose File
+                <input type="file" id="fileInput" class="hidden" accept=".csv,.xls,.xlsx">
+            </label>
+            <p class="mt-2 text-sm text-gray-500">Supported formats: CSV, XLS, XLSX</p>
+        </div>
+
+        <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+
+        <div id="results" class="hidden">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-100 p-4 rounded">
+                    <p class="text-gray-600 mb-1">Rows</p>
+                    <p id="rowCount" class="text-2xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-gray-100 p-4 rounded">
+                    <p class="text-gray-600 mb-1">Columns</p>
+                    <p id="columnCount" class="text-2xl font-bold text-gray-800">0</p>
+                </div>
+            </div>
+            <div id="moneyStatus" class="bg-gray-100 p-4 rounded">
+                <p class="text-gray-800"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const errorDiv = document.getElementById('error');
+            const resultsDiv = document.getElementById('results');
+
+            // Reset UI
+            errorDiv.classList.add('hidden');
+            resultsDiv.classList.add('hidden');
+
+            if (file) {
+                if (file.type === 'text/csv' ||
+                    file.type === 'application/vnd.ms-excel' ||
+                    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+
+                    Papa.parse(file, {
+                        complete: function(results) {
+                            const data = results.data;
+
+                            // Calculate rows and columns
+                            const rowCount = data.length;
+                            const columnCount = data[0] ? data[0].length : 0;
+
+                            // Check for the word "money"
+                            let containsMoney = false;
+                            for (let i = 0; i < data.length; i++) {
+                                for (let j = 0; j < data[i].length; j++) {
+                                    if (String(data[i][j]).toLowerCase().includes('money')) {
+                                        containsMoney = true;
+                                        break;
+                                    }
+                                }
+                                if (containsMoney) break;
+                            }
+
+                            // Update UI
+                            document.getElementById('rowCount').textContent = rowCount;
+                            document.getElementById('columnCount').textContent = columnCount;
+                            document.getElementById('moneyStatus').querySelector('p').textContent =
+                                `The word "money" ${containsMoney ? 'was found' : 'was not found'} in the file.`;
+
+                            resultsDiv.classList.remove('hidden');
+                        },
+                        error: function(error) {
+                            errorDiv.textContent = 'Error parsing file. Please make sure it\'s a valid CSV/Excel file.';
+                            errorDiv.classList.remove('hidden');
+                        }
+                    });
+                } else {
+                    errorDiv.textContent = 'Please upload a valid CSV or Excel file.';
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
